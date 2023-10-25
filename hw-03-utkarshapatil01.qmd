@@ -1,0 +1,1323 @@
+---
+title: "hw-03-utkarshapatil01"
+author: "Utkarsha Patil"
+format: html
+editor: visual
+---
+
+# **Classification: Basic Concepts and Techniques**
+
+## **Install packages**
+
+```{r warning=FALSE}
+if(!require(pacman))
+  install.packages("pacman")
+
+pacman::p_load(tidyverse, rpart, rpart.plot, caret, 
+  lattice, FSelector, sampling, pROC, mlbench)
+```
+
+## Art History Data
+
+The data was collected to assess the demographic representation of artists through editions of Janson's History of Art and Gardner's Art Through the Ages, two of the most popular art history textbooks used in the American education system.
+
+Here is a basic summary of the provided data columns:
+
+**artist_name**: The name of the artist.
+
+**edition_number**: The edition number associated with the artwork.
+
+**year**: The year when the artwork was created.
+
+**artist_nationality**: The nationality of the artist.
+
+**artist_nationality_other**: Additional information about the artist's nationality (if applicable).
+
+**artist_gender**: The gender of the artist (e.g., Male or Female).
+
+**artist_race**: The racial background or ethnicity of the artist (e.g., Black or African American, White).
+
+**artist_ethnicity**: The artist's ethnicity, specifying whether they are of Hispanic or Latino origin.
+
+**book**: The name of the book or collection to which the artwork belongs.
+
+**space_ratio_per_page_total**: A ratio representing the space occupied by the artwork on a page in the book.
+
+**artist_unique_id**: An identifier associated with the artist.
+
+**moma_count_to_year**: The count related to the Museum of Modern Art (MoMA) up to a specific year.
+
+**whitney_count_to_year**: The count related to the Whitney Museum up to a specific year.
+
+**artist_race_nwi**: The artist's race or ethnicity, with "Non-White" or "White" as the options.
+
+The data includes information about various artists, their artworks, and related details, such as their gender, nationality, race, and the museums where their work is counted.
+
+```{r}
+artists <- read_csv("artists.csv")
+head(artists)
+```
+
+A **tibble** is a data structure in R, part of the tidyverse ecosystem, that is designed to make data manipulation and analysis easier and more consistent. It is an enhanced and modern alternative to the traditional data frame in R.
+
+```{r}
+library(tidyverse)
+
+# Convert the artists dataset into a tibble.
+as_tibble(artists)
+```
+
+Remove irrelevant columns for prediction:
+
+**artist_name** because the artist's name itself might not be a strong predictor.
+
+```{r}
+# List of columns to be removed
+columns_to_remove <- c(
+    'artist_name'
+)
+
+# Remove the specified columns
+artists <- select(artists, -one_of(columns_to_remove))
+
+head(artists)
+```
+
+Here we are transforming logical columns to factors with specific levels and character columns to factors in a data.
+
+```{r warning=FALSE}
+artists <- artists |>
+  # Convert logical columns to factors with levels 'TRUE' and 'FALSE'.
+  mutate(across(where(is.logical), factor, levels = c(TRUE, FALSE))) |>
+  
+  # Convert character columns to factors.
+  mutate(across(where(is.character), factor))
+```
+
+```{r}
+summary(artists)
+```
+
+Handling missing values:
+
+```{r}
+# Check for missing values in the dataset
+missing_values <- colSums(is.na(artists))
+print(missing_values)
+```
+
+```{r}
+# Remove rows with missing values 
+artists <- na.omit(artists)
+missing_values <- colSums(is.na(artists))
+print(missing_values)
+```
+
+## **Decision Trees**
+
+A decision tree is a tree-like structure that represents a series of decisions and their possible consequences.
+
+Recursive Partitioning (similar to CART) uses the Gini index to make splitting decisions and early stopping (pre-pruning).
+
+```{r}
+library(rpart)
+```
+
+### **Create Tree With Default Settings (uses pre-pruning)**
+
+```{r}
+# Build a decision tree with default settings
+tree_default <- artists |> 
+  rpart(book ~ ., data = _)
+tree_default
+```
+
+Here we are trying to predict whether a particular artist is included in Janson's History of Art or Gardner's Art Through the Ages.
+
+Plotting
+
+```{r}
+library(rpart.plot)
+rpart.plot(tree_default, extra = 2)
+
+```
+
+This decision tree predicts the book ("Gardner" or "Janson") based on the features in the dataset. The tree splits the data into subsets based on specific conditions related to **edition_number** and **year**.
+
+### **Create a Full Tree**
+
+To create a full tree, we set the complexity parameter cp to 0 (split even if it does not improve the tree) and we set the minimum number of observations in a node needed to split to the smallest value of 2.
+
+```{r}
+# Build a decision tree
+tree_full <- artists |> 
+  rpart(book ~ . , data = _, 
+        control = rpart.control(minsplit = 2, cp = 0))
+rpart.plot(tree_full, extra = 2, 
+           roundint=FALSE,
+            box.palette = list("Gy", "Gn", "Bu", "Bn", 
+                               "Or", "Rd", "Pu")) # specify 7 colors
+```
+
+When **cp = 0** This means that no cost complexity pruning is applied. In other words, the tree is allowed to grow until it perfectly fits the training data, which can result in a very complex, deep, and overfit tree.
+
+```{r}
+tree_full
+```
+
+Training error on tree with pre-pruning
+
+Here we are making predictions using a decision tree model (**tree_default**) on the **artists** data frame
+
+```{r}
+# Predict book using the decision tree model
+predict(tree_default, artists ) |> head ()
+```
+
+Predicts the book for each record in the 'artists' dataset, which is either "Gardner" (1) or "Janson" (0).
+
+By specifying **type = "class"**, you obtain the class labels that the decision tree model predicts for each observation in the **artists** data frame.
+
+```{r}
+# Predict class labels (Gardner or Janson)
+pred <- predict(tree_default, artists , type="class")
+head(pred)
+```
+
+```{r}
+confusion_table <- with(artists, table(book , pred))
+confusion_table
+```
+
+The model correctly predicted "Gardner" 1885 times (True Positives) and "Janson" 1219 times (True Negatives). There were no False Positives or False Negatives
+
+```{r}
+# Calculate the total number of correct predictions
+correct <- confusion_table |> diag() |> sum()
+correct
+```
+
+```{r}
+# Calculate the total number of errors
+error <- confusion_table |> sum() - correct
+error
+```
+
+```{r}
+accuracy <- correct / (correct + error)
+accuracy
+```
+
+Use a function for accuracy
+
+```{r}
+accuracy <- function(truth, prediction) {
+    tbl <- table(truth, prediction)
+    sum(diag(tbl))/sum(tbl)
+}
+
+accuracy(artists |> pull(book), pred)
+```
+
+Training error of the full tree
+
+```{r}
+accuracy(artists |> pull(book), 
+         predict(tree_full, artists, type = "class"))
+```
+
+### **Make Predictions for New Data**
+
+Make up my own artist: Artsist in year 2020 with edition number 17.
+
+```{r}
+my_artist <- tibble(edition_number = 17 ,year= 2020,artist_nationality = "American",artist_nationality_other = "Other",artist_gender = "Female",artist_race = "Black or African American",artist_ethnicity = "Not Hispanic or Latino origin", book = NA, space_ratio_per_page_total = 0.5344869907,artist_unique_id = 10,moma_count_to_year = 15,whitney_count_to_year = 5,artist_race_nwi = "Non-White")
+```
+
+Fix columns to be factors like in the training set.
+
+```{r}
+# Convert character columns in my_artist to factors
+my_artist <- my_artist |> 
+  mutate(across(where(is.character), factor))
+my_artist
+```
+
+Make a prediction using the default tree
+
+```{r}
+predict(tree_default , my_artist, type = "class")
+```
+
+## **Model Evaluation with Caret**
+
+The package **caret** makes preparing training sets, building classification (and regression) models and evaluation easier.
+
+```{r}
+library(caret)
+```
+
+Set random number generator seed to make results reproducible
+
+```{r}
+set.seed(2000)
+```
+
+### **Hold out Test Data**
+
+Test data is not used in the model building process and set aside purely for testing the model. Here, we partition data the 80% training and 20% testing.
+
+```{r warning=FALSE}
+# Create a data partition
+inTrain <- createDataPartition(y = artists$book, p = .8, list = FALSE)
+
+# Extract the training set
+artists_train <- artists |> slice(inTrain)
+```
+
+```{r}
+# Extract the testing set
+artists_test <- artists |> slice(-inTrain)
+```
+
+### **Learn a Model and Tune Hyperparameters on the Training Data**
+
+The package caret combines training and validation for hyperparameter tuning into a single function called train(). It internally splits the data into training and validation sets and thus will provide you with error estimates for different hyperparameter settings.
+
+```{r}
+fit <- artists_train |>
+  train(book ~ .,
+    data = _ ,
+    method = "rpart",
+    control = rpart.control(minsplit = 2),
+    trControl = trainControl(method = "cv", number = 10),
+    tuneLength = 5)
+
+fit
+```
+
+In this case, the model with **cp = 0** was selected as the final model due to its perfect accuracy on the training data.
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2,
+  box.palette = list("Gy", "Gn", "Bu", "Bn", "Or", "Rd", "Pu"))
+```
+
+```{r}
+# Compute variable importance 
+varImp(fit)
+```
+
+Here is the variable importance without competing splits.
+
+```{r}
+# Compute variable importance
+ imp <- varImp(fit, compete = FALSE)
+ imp
+```
+
+```{r}
+ggplot(imp)
+```
+
+edition_number has the highest importance score, represented as 100.00. year has an importance score of 53.84, indicating it is also a significant predictor. The other predictor variables listed have importance scores of 0.00, suggesting they have little to no impact on the model's predictive performance.
+
+## **Testing: Confusion Matrix and Confidence Interval for Accuracy**
+
+Use the best model on the test data
+
+```{r}
+# Make predictions on test data
+pred <- predict(fit, newdata = artists_test)
+```
+
+```{r}
+# Calculate a confusion matrix
+confusionMatrix(data = pred, 
+                ref = artists_test |> pull(book))
+```
+
+The accuracy is 1.0,Sensitivity (True Positive Rate) and Specificity (True Negative Rate) are also both 1.0, indicating perfect performance.
+
+## **Model Comparison**
+
+We will compare decision trees with a k-nearest neighbors (kNN) classifier. We will create fixed sampling scheme (10-folds) so we compare the different models using exactly the same folds. It is specified as `trControl` during training.
+
+```{r}
+# Create cross-validation folds
+train_index <- createFolds(artists_train$book, k = 10)
+```
+
+Build models
+
+```{r}
+# Fit a classification model using the "rpart"
+rpartFit <- artists_train |> 
+  train(book ~ .,
+        data = _,
+        method = "rpart",
+        tuneLength = 10,
+        trControl = trainControl(method = "cv", indexOut = train_index)
+  )
+```
+
+KNN fit:
+
+```{r warning=FALSE}
+knnFit <- artists_train |> 
+  train(book ~ .,
+        data = _,
+        method = "knn",
+        preProcess = "scale",
+        tuneLength = 10,
+        trControl = trainControl(method = "cv", indexOut = train_index)
+  )
+```
+
+Compare accuracy over all folds.
+
+```{r}
+resamps <- resamples(list(
+        CART = rpartFit,
+        kNearestNeighbors = knnFit
+       ))
+
+summary(resamps)
+```
+
+```{r}
+library(lattice)
+bwplot(resamps, layout = c(3, 1))
+```
+
+Here "CART achieving perfect accuracy and Kappa, while kNearestNeighbors also has strong performance.
+
+```{r}
+# Calculate the differences in performance metrics between two models
+difs <- diff(resamps)
+difs
+```
+
+```{r}
+summary(difs)
+```
+
+## **Feature Selection and Feature Preparation**
+
+Decision trees implicitly select features for splitting, but we can also select features manually.
+
+```{r}
+library(FSelector)
+```
+
+### **Univariate Feature Importance Score**
+
+These scores measure how related each feature is to the class variable. For discrete features (as in our case), the chi-square statistic can be used to derive a score.
+
+```{r}
+weights <- artists_train|> 
+  chi.squared(book ~ ., data = _) |>
+  as_tibble(rownames = "feature") |>
+  arrange(desc(attr_importance))
+
+weights
+```
+
+Provides insight into the importance of each feature in predicting the "book" categories and can help in feature selection or understanding which features are most relevant in the classification task.
+
+plot importance in descending order (using reorder to order factor levels used by ggplot).
+
+```{r}
+ggplot(weights,
+  aes(x = attr_importance, y = reorder(feature, attr_importance))) +
+  geom_bar(stat = "identity") +
+  xlab("Importance score") + 
+  ylab("Feature")
+```
+
+'year' has the highest importance score , indicating that it is a significant predictor and 'edition_number' follows with a relatively high importance score.
+
+Get the 5 best features
+
+```{r}
+subset <- cutoff.k(weights |> 
+                   column_to_rownames("feature"), 5)
+subset
+```
+
+Use only the best 5 features to build a model (`Fselector` provides `as.simple.formula`)
+
+```{r}
+f <- as.simple.formula(subset, "book")
+f
+```
+
+"year," "edition_number," "space_ratio_per_page_total," "artist_nationality," and "artist_race." are used as predictors in the modeling or analysis of the "book" variable.
+
+```{r}
+m <- artists_train |> rpart(f, data = _)
+rpart.plot(m, extra = 2, roundint = FALSE)
+```
+
+```{r}
+artists_train |> 
+  gain.ratio(book ~ ., data = _) |>
+  as_tibble(rownames = "feature") |>
+  arrange(desc(attr_importance))
+```
+
+**gain.ratio** function calculates the gain ratio for each predictor variable.
+
+### **Feature Subset Selection**
+
+Often features are related and calculating importance for each feature independently is not optimal. 
+
+```{r}
+artists_train |> 
+  cfs(book ~ ., data = _)
+```
+
+"**edition_number**" and "**year**" are the two predictor variables selected by the CFS method.
+
+Black-box feature selection uses an evaluator function (the black box) to calculate a score to be maximized. First, we define an evaluation function that builds a model given a subset of features and calculates a quality score. 
+
+```{r}
+evaluator <- function(subset) {
+  model <- artists_train|> 
+    train(as.simple.formula(subset, "book"),
+          data = _,
+          method = "rpart",
+          trControl = trainControl(method = "boot", number = 5),
+          tuneLength = 0)
+  results <- model$resample$Accuracy
+  cat("Trying features:", paste(subset, collapse = " + "), "\n")
+  m <- mean(results)
+  cat("Accuracy:", round(m, 2), "\n\n")
+  m
+}
+```
+
+```{r}
+features <- artists_train |> colnames() |> setdiff("type")
+```
+
+### **Using Dummy Variables for Factors**
+
+Nominal features (factors) are often encoded as a series of 0-1 dummy variables. First we use the original encoding of type as a factor with several values.
+
+```{r}
+tree_predator <- artists_train |> 
+  rpart(artist_nationality  ~ book, data = _)
+rpart.plot(tree_predator, extra = 2, roundint = FALSE, box.palette="Blues")
+```
+
+Convert type into a set of 0-1 dummy variables using class2ind.
+
+```{r}
+artists_train_dummy <- as_tibble(class2ind(artists_train$book)) |> 
+  mutate(across(everything(), as.factor)) |>
+  add_column(artist_nationality = artists_train$artist_nationality)
+artists_train_dummy
+```
+
+```{r}
+tree_artist_nationality <- artists_train_dummy |> 
+  rpart(artist_nationality ~ ., 
+        data = _,
+        control = rpart.control(minsplit = 2, cp = 0.01))
+rpart.plot(tree_artist_nationality, roundint = FALSE, box.palette = list("Gy", "Gn", "Bu", "Bn", "Or", "Rd", "Pu"))
+```
+
+```{r}
+fit <- artists_train |> 
+  train(artist_race_nwi ~ book, 
+        data = _, 
+        method = "rpart",
+       control = rpart.control(minsplit = 2),
+        tuneGrid = data.frame(cp = 0.01))
+fit
+
+```
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2)
+```
+
+## **Class Imbalance**
+
+Classifiers have a hard time to learn from data where we have much more observations for one class (called the majority class). This is called the class imbalance problem.
+
+```{r}
+library(rpart)
+library(rpart.plot)
+```
+
+Class distribution
+
+```{r}
+ggplot(artists, aes(y = book)) + geom_bar()
+```
+
+We already have a imbalanced problem as you can see Gardner instances are more that the Janson
+
+Create test and training data. I use here a 50/50 split.
+
+```{r}
+set.seed(1234)
+
+inTrain <- createDataPartition(y = artists$book, p = .5, list = FALSE)
+training_artists <- artists |> slice(inTrain)
+testing_artists <- artists |> slice(-inTrain)
+```
+
+### **Option 1: Use the Data As Is and Hope For The Best**
+
+```{r}
+fit <- training_artists |> 
+  train(book ~ .,
+        data = _,
+        method = "rpart",
+        trControl = trainControl(method = "cv"))
+```
+
+```{r}
+fit
+```
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2)
+```
+
+```{r}
+confusionMatrix(data = predict(fit, testing_artists),
+                ref = testing_artists$book, positive = "Janson")
+```
+
+### **Option 2: Balance Data With Resampling**
+
+We use stratified sampling with replacement (to oversample the minority/positive class).
+
+```{r}
+library(sampling)
+set.seed(1000) # for repeatability
+
+id <- strata(training_artists, stratanames = "book", size = c(50, 50), method = "srswr")
+training_artists_balanced <- training_artists |> 
+  slice(id$ID_unit)
+table(training_artists_balanced$book)
+```
+
+```{r}
+fit <- training_artists_balanced |> 
+  train(book ~ .,
+        data = _,
+        method = "rpart",
+        trControl = trainControl(method = "cv"),
+        control = rpart.control(minsplit = 5))
+
+fit
+```
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2)
+```
+
+Check on the unbalanced testing data.
+
+```{r}
+confusionMatrix(data = predict(fit, testing_artists),
+                ref = testing_artists$book, positive = "Janson")
+```
+
+Here "Accuracy" is 1, indicating perfect accuracy.
+
+```{r}
+id <- strata(training_artists, stratanames = "book", size = c(50, 100), method = "srswr")
+training_artists_balanced <- training_artists |> 
+  slice(id$ID_unit)
+table(training_artists_balanced$book)
+```
+
+```{r}
+fit <- training_artists_balanced |> 
+  train(book ~ .,
+        data = _,
+        method = "rpart",
+        trControl = trainControl(method = "cv"),
+        control = rpart.control(minsplit = 5))
+
+confusionMatrix(data = predict(fit, testing_artists),
+                ref = testing_artists$book, positive = "Janson")
+```
+
+### **Option 3: Build A Larger Tree and use Predicted Probabilities**
+
+```{r}
+fit <- training_artists |> 
+  train(book ~ .,
+        data = _,
+        method = "rpart",
+        tuneLength = 10,
+        trControl = trainControl(method = "cv",
+        classProbs = TRUE,  ## necessary for predict with type="prob"
+        summaryFunction=twoClassSummary),  ## necessary for ROC
+        metric = "ROC",
+        control = rpart.control(minsplit = 3))
+```
+
+```{r}
+fit
+```
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2)
+```
+
+```{r}
+confusionMatrix(data = predict(fit, testing_artists),
+                ref = testing_artists$book, positive = "Janson")
+```
+
+#### Create A Biased Classifier
+
+```{r}
+prob <- predict(fit, testing_artists, type = "prob")
+tail(prob)
+```
+
+```{r}
+pred <- as.factor(ifelse(prob[,"Janson"]>=0.01, "Janson", "Gardner"))
+
+confusionMatrix(data = pred,
+                ref = testing_artists$book, positive = "Janson")
+```
+
+#### Plot the ROC Curve
+
+```{r}
+library("pROC")
+r <- roc(testing_artists$book == "Janson", prob[,"Janson"])
+```
+
+```{r}
+r
+```
+
+```{r}
+ggroc(r) + geom_abline(intercept = 1, slope = 1, color = "darkgrey")
+```
+
+Here area under the curve is 1 creating the perfect diagonal, indicates perfect classification.
+
+### **Option 4: Use a Cost-Sensitive Classifier**
+
+```{r}
+cost <- matrix(c(
+  0,   1,
+  100, 0
+), byrow = TRUE, nrow = 2)
+cost
+```
+
+```{r}
+fit <- training_artists |> 
+  train(book ~ .,
+        data = _,
+        method = "rpart",
+        parms = list(loss = cost),
+        trControl = trainControl(method = "cv"))
+```
+
+The **loss** parameter is used to specify the misclassification costs for different classes.
+
+```{r}
+fit
+```
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2)
+```
+
+plotting the graph :
+
+```{r}
+rpart.plot(fit$finalModel, extra = 2)
+```
+
+```{r}
+confusionMatrix(data = predict(fit, testing_artists),
+                ref = testing_artists$book, positive = "Janson")
+```
+
+# **Classification: Alternative Techniques**
+
+## **Install packages**
+
+```{r}
+if(!require(pacman))
+  install.packages("pacman")
+
+pacman::p_load(
+  C50,                # C5.0 Decision Trees and Rule-Based Models
+  caret,              # Classification and Regression Training
+  e1071,              # Misc Functions of the Department of Statistics (e1071), TU Wien
+  keras,              # R Interface to 'Keras'
+  kernlab,            # Kernel-Based Machine Learning Lab
+  lattice,            # Trellis Graphics for R
+  MASS,               # Support Functions and Datasets for Venables and Ripley's MASS
+  mlbench,            # Machine Learning Benchmark Problems
+  nnet,               # Feedforward Neural Networks and Multinomial Log-Linear Models
+  palmerpenguins,     # Palmer Archipelago (Antarctica) Penguin Data
+  party,              # A Laboratory for Recursive Partytioning
+  partykit,           # A Toolkit for Recursive Partytioning
+  randomForest,       # Breiman and Cutler's Random Forests for Classification and Regression
+  rpart,              # Recursive partitioning models
+  RWeka,              # R/Weka Interface
+  scales,             # Scale Functions for Visualization
+  tidymodels,         # Tidy machine learning framework
+  tidyverse,          # Tidy data wrangling and visualization
+  xgboost             # Extreme Gradient Boosting
+)
+```
+
+Show fewer digits
+
+```{r}
+options(digits=3)
+```
+
+## **Training and Test Data**
+
+We will continue using artists data set:
+
+```{r}
+artists <- as.data.frame(artists)
+artists |> glimpse()
+```
+
+Test data is not used in the model building process and needs to be set aside purely for testing the model after it is completely built. Here I use 80% for training.
+
+```{r}
+set.seed(123)  # for reproducibility
+inTrain <- createDataPartition(y = artists$book, p = .8)[[1]]
+artists_train <- dplyr::slice(artists, inTrain)
+artists_test <- dplyr::slice(artists, -inTrain)
+```
+
+## **Fitting Different Classification Models to the Training Data**
+
+```{r}
+train_index <- createFolds(artists_train$book, k = 10)
+```
+
+### **Conditional Inference Tree (Decision Tree)**
+
+Conditional Inference Trees is a different kind of decision tree that uses recursive partitioning of dependent variables based on the value of correlations.
+
+```{r}
+ctreeFit <- artists_train |> train(book ~ .,
+  method = "ctree",
+  data = _,
+    tuneLength = 5,
+    trControl = trainControl(method = "cv", indexOut = train_index))
+ctreeFit
+```
+
+```{r}
+plot(ctreeFit$finalModel)
+```
+
+The conditional inference tree model performed very well in terms of accuracy and kappa, and the hyperparameter "mincriterion" was set to 0.99 to achieve this level of performance.
+
+### **C 4.5 Decision Tree**
+
+```{r}
+# Train a C4.5-like decision tree (J48) classification model
+C45Fit <- artists_train |> train(book ~ .,
+  method = "J48",
+  data = _,
+    tuneLength = 5,
+    trControl = trainControl(method = "cv", indexOut = train_index))
+C45Fit
+```
+
+The model with the highest Accuracy value was selected as the optimal model.The final values used for the model were **C = 0.01** and **M = 1**.
+
+```{r}
+C45Fit$finalModel
+```
+
+### **K-Nearest Neighbors**
+
+```{r warning=FALSE}
+# Train a k-Nearest Neighbors (k-NN) classification model
+knnFit <- artists_train |> train(book ~ .,
+  method = "knn",
+  data = _,
+  preProcess = "scale",
+    tuneLength = 5,
+  tuneGrid=data.frame(k = 1:10),
+    trControl = trainControl(method = "cv", indexOut = train_index))
+knnFit
+```
+
+```{r}
+knnFit$finalModel
+```
+
+### **PART (Rule-based classifier)**
+
+PART stands for "Partial C 4.5," and it is an extension of the well-known C4.5 decision tree algorithm. PART is designed for classification tasks and is particularly useful when dealing with datasets that contain missing values or noisy data.
+
+```{r}
+# Train a rule-based classification model using the PART algorithm
+rulesFit <- artists_train |> train(book ~ .,
+  method = "PART",
+  data = _,
+  tuneLength = 5,
+  trControl = trainControl(method = "cv", indexOut = train_index))
+rulesFit
+```
+
+```{r}
+rulesFit$finalModel
+```
+
+### **Linear Support Vector Machines**
+
+A Linear Support Vector Machine (Linear SVM) is a supervised machine learning algorithm used for classification and regression tasks. It is a variant of the traditional Support Vector Machine (SVM) algorithm that focuses on finding a linear decision boundary to separate data into different classes.
+
+```{r warning=FALSE}
+# Train a Support Vector Machine (SVM) classification model with a linear kernel
+svmFit <- artists_train |> train(book ~.,
+  method = "svmLinear",
+  data = _,
+    tuneLength = 5,
+    trControl = trainControl(method = "cv", indexOut = train_index))
+svmFit
+```
+
+```{r}
+svmFit$finalModel
+```
+
+### **Random Forest**
+
+Random forests or random decision forests is an ensemble learning method for classification, regression and other tasks that operates by constructing a multitude of decision trees at training time.
+
+```{r}
+# Train a Random Forest classification model
+randomForestFit <- artists_train |> train(book ~ .,
+  method = "rf",
+  data = _,
+    tuneLength = 5,
+    trControl = trainControl(method = "cv", indexOut = train_index))
+randomForestFit
+```
+
+```{r}
+randomForestFit$finalModel
+```
+
+### **Gradient Boosted Decision Trees (xgboost)**
+
+Gradient-boosted decision trees are a popular method for solving prediction problems in both classification and regression domains. The approach improves the learning process by simplifying the objective and reducing the number of iterations to get to a sufficiently optimal solution.
+
+```{r}
+# Train a classification model using the XGBoost algorithm
+xgboostFit <- artists_train |> train(book ~ .,
+  method = "xgbTree",
+  data = _,
+  tuneLength = 5,
+  trControl = trainControl(method = "cv", indexOut = train_index),
+  tuneGrid = expand.grid(
+    nrounds = 20,
+    max_depth = 3,
+    colsample_bytree = .6,
+    eta = 0.1,
+    gamma=0,
+    min_child_weight = 1,
+    subsample = .5
+  ))
+xgboostFit
+```
+
+```{r}
+xgboostFit$finalModel
+```
+
+### **Artificial Neural Network**
+
+```{r}
+nnetFit <- artists_train |> train(book ~ .,
+  method = "nnet",
+  data = _,
+    tuneLength = 5,
+    trControl = trainControl(method = "cv", indexOut = train_index),
+  trace = FALSE)
+nnetFit
+```
+
+```{r}
+nnetFit$finalModel
+```
+
+## **Comparing Models**
+
+Collect the performance metrics from the models trained on the same data.
+
+```{r}
+resamps <- resamples(list(
+  ctree = ctreeFit,
+  C45 = C45Fit,
+  SVM = svmFit,
+  KNN = knnFit,
+  rules = rulesFit,
+  randomForest = randomForestFit,
+  xgboost = xgboostFit,
+  NeuralNet = nnetFit
+    ))
+resamps
+```
+
+```{r}
+summary(resamps)
+```
+
+```{r}
+library(lattice)
+bwplot(resamps, layout = c(3, 1))
+```
+
+For the "CART" model, the accuracy values range from a minimum of 1.000 to a maximum of 1.000, indicating high performance.
+
+For the "kNearestNeighbors" (k-NN) model, the accuracy values are slightly lower, with 0.961, which means the k-NN model is slightly less accurate on average compared to CART.
+
+```{r}
+difs <- diff(resamps)
+difs
+```
+
+```{r}
+summary(difs)
+```
+
+The small p-values for both Accuracy and Kappa comparisons mean that there is a significant difference in performance between the CART and k-NN models.
+
+## **Applying the Chosen Model to the Test Data**
+
+```{r}
+pr <- predict(xgboostFit, artists_test)
+```
+
+Calculate the confusion matrix for the held-out test data.
+
+```{r}
+confusionMatrix(pr, reference = artists_test$book)
+```
+
+## **Comparing Decision Boundaries of Popular Classification Techniques**
+
+Classifiers create decision boundaries to discriminate between classes. Different classifiers are able to create different shapes of decision boundaries (e.g., some are strictly linear) and thus some classifiers may perform better for certain datasets.
+
+```{r}
+library(scales)
+library(tidyverse)
+library(ggplot2)
+library(caret)
+
+decisionplot <- function(model, data, class_var, 
+  predict_type = c("class", "prob"), resolution = 3 * 72) {
+  # resolution is set to 72 dpi if the image is rendered  3 inches wide. 
+  
+  y <- data |> pull(class_var)
+  x <- data |> dplyr::select(-all_of(class_var))
+  
+  # resubstitution accuracy
+  prediction <- predict(model, x, type = predict_type[1])
+  # LDA returns a list
+  if(is.list(prediction)) prediction <- prediction$class
+  prediction <- factor(prediction, levels = levels(y))
+  
+  cm <- confusionMatrix(data = prediction, 
+                        reference = y)
+  acc <- cm$overall["Accuracy"]
+  
+  # evaluate model on a grid
+  r <- sapply(x[, 1:2], range, na.rm = TRUE)
+  xs <- seq(r[1,1], r[2,1], length.out = resolution)
+  ys <- seq(r[1,2], r[2,2], length.out = resolution)
+  g <- cbind(rep(xs, each = resolution), rep(ys, time = resolution))
+  colnames(g) <- colnames(r)
+  g <- as_tibble(g)
+  
+  ### guess how to get class labels from predict
+  ### (unfortunately not very consistent between models)
+  cl <- predict(model, g, type = predict_type[1])
+  
+  # LDA returns a list
+  prob <- NULL
+  if(is.list(cl)) { 
+    prob <- cl$posterior
+    cl <- cl$class
+  } else
+    if(!is.na(predict_type[2]))
+      try(prob <- predict(model, g, type = predict_type[2]))
+  
+  # we visualize the difference in probability/score between the 
+  # winning class and the second best class.
+  # don't use probability if predict for the classifier does not support it.
+  max_prob <- 1
+  if(!is.null(prob))
+    try({
+      max_prob <- t(apply(prob, MARGIN = 1, sort, decreasing = TRUE))
+      max_prob <- max_prob[,1] - max_prob[,2]
+    }, silent = TRUE) 
+  
+  cl <- factor(cl, levels = levels(y))
+  
+  g <- g |> add_column(prediction = cl, probability = max_prob)
+  
+  ggplot(g, mapping = aes(
+    x = .data[[colnames(g)[1]]], y = .data[[colnames(g)[2]]])) +
+    geom_raster(mapping = aes(fill = prediction, alpha = probability)) +
+    geom_contour(mapping = aes(z = as.numeric(prediction)), 
+      bins = length(levels(cl)), linewidth = .5, color = "black") +
+    geom_point(data = data, mapping =  aes(
+      x = .data[[colnames(data)[1]]], 
+      y = .data[[colnames(data)[2]]],
+      shape = .data[[class_var]]), alpha = .7) + 
+    scale_alpha_continuous(range = c(0,1), limits = c(0,1), guide = "none") +  
+    labs(subtitle = paste("Training accuracy:", round(acc, 2))) +
+     theme_minimal(base_size = 14)
+}
+```
+
+### **The Artist Dataset**
+
+We will continue using same dataset and will be using edition_number, year and book as parameters.
+
+```{r}
+### Three classes 
+### (note: MASS also has a select function which hides dplyr's select)
+x <- artists |> dplyr::select(edition_number, year, book)
+```
+
+```{r}
+ggplot(x, aes(x = edition_number, y = year, fill = book)) +  
+  stat_density_2d(geom = "polygon", aes(alpha = after_stat(level))) +
+  geom_point() +
+  theme_minimal(base_size = 14) +
+  labs(x = "Edition number",
+       y = "Year",
+       fill = "Book",
+       alpha = "Density")
+```
+
+#### K-Nearest Neighbors Classifier
+
+set the number of nearest neighbors to 1
+
+```{r}
+model <- x |> caret::knn3(book ~ ., data = _, k = 1)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "kNN (1 neighbor)",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+set the number of nearest neighbors to 3
+
+```{r}
+model <- x |> caret::knn3(book ~ ., data = _, k = 3)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "kNN (3 neighbor)",
+        x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+set the number of nearest neighbors to 9
+
+```{r}
+model <- x |> caret::knn3(book ~ ., data = _, k = 9)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "kNN (3 neighbor)",
+        x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+#### Naive Bayes Classifier
+
+```{r}
+model <- x |> e1071::naiveBayes(book ~ ., data = _)
+decisionplot(model, x, class_var = "book", 
+             predict_type = c("class", "raw")) + 
+  labs(title = "Naive Bayes",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction") 
+```
+
+#### Linear Discriminant Analysis
+
+Linear Discriminant Analysis (LDA) is a supervised learning algorithm used for classification tasks in machine learning. It is a technique used to find a linear combination of features that best separates the classes in a dataset.
+
+```{r}
+model <- x |> MASS::lda(book ~ ., data = _)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "LDA",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+#### Multinomial Logistic Regression (implemented in nnet)
+
+Multinomial logistic regression is an extension of logistic regression to problems with more than two classes.
+
+```{r}
+model <- x |> nnet::multinom(book ~., data = _)
+```
+
+```{r}
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "Multinomial Logistic Regression",
+      x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+#### Decision Trees
+
+```{r}
+model <- x |> rpart::rpart(book ~ ., data = _)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "CART",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+**`cp`** (complexity parameter) is set to 0.001, which controls the trade-off between model complexity and accuracy. A lower **`cp`** value results in a more complex tree. **`minsplit`** sets the minimum number of observations required to split a node.
+
+```{r}
+model <- x |> rpart::rpart(book ~ ., data = _,
+  control = rpart.control(cp = 0.001, minsplit = 1))
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "CART (overfitting)",
+       x = "Edition number)",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <- x |> C50::C5.0(book ~ ., data = _)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "C5.0",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <- x |> randomForest::randomForest(book ~ ., data = _)
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "Random Forest",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+#### SVM
+
+SVM algorithms are very effective as we try to find the maximum separating hyperplane between the different classes available in the target feature.
+
+```{r}
+model <- x |> e1071::svm(book ~ ., data = _, kernel = "linear")
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "SVM (linear kernel)",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <- x |> e1071::svm(book ~ ., data = _, kernel = "radial")
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "SVM (radial kernel)",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <- x |> e1071::svm(book ~ ., data = _, kernel = "polynomial")
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "SVM (polynomial kernel)",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <- x |> e1071::svm(book ~ ., data = _, kernel = "sigmoid")
+decisionplot(model, x, class_var = "book") + 
+  labs(title = "SVM (sigmoid kernel)",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+#### Single Layer Feed-forward Neural Networks
+
+```{r}
+model <-x |> nnet::nnet(book ~ ., data = _, size = 1, trace = FALSE)
+decisionplot(model, x, class_var  = "book", 
+  predict_type = c("class", "raw")) + 
+  labs(title = "NN (1 neuron)",
+       x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <-x |> nnet::nnet(book ~ ., data = _, size = 2, trace = FALSE)
+decisionplot(model, x, class_var  = "book", 
+  predict_type = c("class", "raw")) + 
+  labs(title = "NN (2 neurons)",
+        x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+```{r}
+model <-x |> nnet::nnet(book ~ ., data = _, size = 4, trace = FALSE)
+decisionplot(model, x, class_var  = "book", 
+  predict_type = c("class", "raw")) + 
+  labs(title = "NN (4 neurons)",
+      x = "Edition number",
+       y = "Year",
+       shape = "Book",
+       fill = "Prediction")
+```
+
+**`size`** specifies that the neural network should have how many hidden neurons in a single hidden layer.
