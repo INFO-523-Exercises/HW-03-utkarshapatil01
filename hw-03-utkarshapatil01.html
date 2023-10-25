@@ -870,7 +870,7 @@ kNearestNeighbors 1.852e-05                  </code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>book ~ year + edition_number + space_ratio_per_page_total + artist_nationality + 
     artist_race
-&lt;environment: 0x0000022ab18aee48&gt;</code></pre>
+&lt;environment: 0x00000297a79ef378&gt;</code></pre>
 </div>
 </div>
 <p>“year,” “edition_number,” “space_ratio_per_page_total,” “artist_nationality,” and “artist_race.” are used as predictors in the modeling or analysis of the “book” variable.</p>
@@ -1702,7 +1702,7 @@ Size of the tree :  9</code></pre>
 <section id="k-nearest-neighbors" class="level3">
 <h3 class="anchored" data-anchor-id="k-nearest-neighbors"><strong>K-Nearest Neighbors</strong></h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb152"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train a k-Nearest Neighbors (k-NN) classification model</span></span>
+<div class="sourceCode cell-code" id="cb152"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train a k-Nearest Neighbors (KNN) classification model</span></span>
 <span id="cb152-2"><a href="#cb152-2" aria-hidden="true" tabindex="-1"></a>knnFit <span class="ot">&lt;-</span> artists_train <span class="sc">|&gt;</span> <span class="fu">train</span>(book <span class="sc">~</span> .,</span>
 <span id="cb152-3"><a href="#cb152-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"knn"</span>,</span>
 <span id="cb152-4"><a href="#cb152-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> _,</span>
@@ -1739,6 +1739,7 @@ Accuracy was used to select the optimal model using the largest value.
 The final value used for the model was k = 1.</code></pre>
 </div>
 </div>
+<p>For each k value from 1 to 10, the accuracy and Kappa statistics is given. The best k value is chosen based on the highest accuracy, and in this case, the best k is 1 (k = 1) due it’s highest value.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb154"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1" aria-hidden="true" tabindex="-1"></a>knnFit<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -1789,6 +1790,7 @@ Accuracy was used to select the optimal model using the largest value.
 The final values used for the model were threshold = 0.5 and pruned = yes.</code></pre>
 </div>
 </div>
+<p>For each combination of “threshold” and “pruned” settings, we have given the accuracy and Kappa statistics. Here for all the cases it’s 1. The final values used for the model were threshold = 0.5 and pruned = yes.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb158"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1" aria-hidden="true" tabindex="-1"></a>rulesFit<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -1808,6 +1810,7 @@ year &gt; 1948: Janson (294.0)
 Number of Rules  :  5</code></pre>
 </div>
 </div>
+<p>This decision list is used for classifying instances and provides rules for assigning instances to classes</p>
 </section>
 <section id="linear-support-vector-machines" class="level3">
 <h3 class="anchored" data-anchor-id="linear-support-vector-machines"><strong>Linear Support Vector Machines</strong></h3>
@@ -1838,6 +1841,7 @@ Resampling results:
 Tuning parameter 'C' was held constant at a value of 1</code></pre>
 </div>
 </div>
+<p>The results indicate that the model achieved perfect accuracy (1) and perfect Kappa (1).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb162"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb162-1"><a href="#cb162-1" aria-hidden="true" tabindex="-1"></a>svmFit<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -1854,6 +1858,7 @@ Objective Function Value : -0.237
 Training error : 0 </code></pre>
 </div>
 </div>
+<p>Training error: 0 indicates that the training error for the SVM model is 0, meaning the model perfectly fits the training data.</p>
 </section>
 <section id="random-forest" class="level3">
 <h3 class="anchored" data-anchor-id="random-forest"><strong>Random Forest</strong></h3>
@@ -1889,6 +1894,7 @@ Accuracy was used to select the optimal model using the largest value.
 The final value used for the model was mtry = 19.</code></pre>
 </div>
 </div>
+<p>The “mtry” parameter represents the number of predictors randomly selected to split a node in a tree of the Random Forest. The best “mtry” value was selected based on the highest accuracy, and in this case, the best “mtry” is 19.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb166"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb166-1"><a href="#cb166-1" aria-hidden="true" tabindex="-1"></a>randomForestFit<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -1906,6 +1912,7 @@ Gardner    1507      1    0.000663
 Janson        0    976    0.000000</code></pre>
 </div>
 </div>
+<p>For class “Gardner,”there was only 1 mis classification, resulting in a very low error rate of approximately 0.000663, but class “Janson,” it correctly classified all instances.</p>
 </section>
 <section id="gradient-boosted-decision-trees-xgboost" class="level3">
 <h3 class="anchored" data-anchor-id="gradient-boosted-decision-trees-xgboost"><strong>Gradient Boosted Decision Trees (xgboost)</strong></h3>
@@ -1949,6 +1956,7 @@ Tuning parameter 'subsample' was held
  constant at a value of 0.5</code></pre>
 </div>
 </div>
+<p>The results indicate that the model achieved very high accuracy (0.998) and Kappa (0.995).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb170"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1" aria-hidden="true" tabindex="-1"></a>xgboostFit<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -2032,6 +2040,7 @@ Accuracy was used to select the optimal model using the largest value.
 The final values used for the model were size = 7 and decay = 0.01.</code></pre>
 </div>
 </div>
+<p>Different combinations of “size” and “decay” values are tested during hyperparameter tuning to find the combination that results in the best model performance. Accuracy was used to select the optimal model, and the final values used for the model are size = 7 and decay = 0.01.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb174"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb174-1"><a href="#cb174-1" aria-hidden="true" tabindex="-1"></a>nnetFit<span class="sc">$</span>finalModel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -2041,6 +2050,7 @@ output(s): .outcome
 options were - entropy fitting  decay=0.01</code></pre>
 </div>
 </div>
+<p>Output provides a detailed summary of the neural network architecture, the input features, the output etc.</p>
 </section>
 </section>
 <section id="comparing-models" class="level2">
@@ -2104,6 +2114,7 @@ xgboost      0.958   1.000  1.000 0.995   1.000 1.000    0
 NeuralNet    0.648   0.665  0.695 0.720   0.726 0.966    0</code></pre>
 </div>
 </div>
+<p>The accuracy values range from 0.819 to 1.00 and Kappa values ranges from 0.648 to 1.000, showing majority of models are performing well.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb180"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb180-1"><a href="#cb180-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lattice)</span>
 <span id="cb180-2"><a href="#cb180-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bwplot</span>(resamps, <span class="at">layout =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -2111,7 +2122,7 @@ NeuralNet    0.648   0.665  0.695 0.720   0.726 0.966    0</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-109-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>For the “CART” model, the accuracy values range from a minimum of 1.000 to a maximum of 1.000, indicating high performance.</p>
+<p>For the “CART” model, the accuracy value is 1.00, indicating high performance.</p>
 <p>For the “kNearestNeighbors” (k-NN) model, the accuracy values are slightly lower, with 0.961, which means the k-NN model is slightly less accurate on average compared to CART.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb181"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb181-1"><a href="#cb181-1" aria-hidden="true" tabindex="-1"></a>difs <span class="ot">&lt;-</span> <span class="fu">diff</span>(resamps)</span>
@@ -2300,8 +2311,7 @@ Prediction Gardner Janson
 <p>We will continue using same dataset and will be using edition_number, year and book as parameters.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb189"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb189-1"><a href="#cb189-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Three classes </span></span>
-<span id="cb189-2"><a href="#cb189-2" aria-hidden="true" tabindex="-1"></a><span class="do">### (note: MASS also has a select function which hides dplyr's select)</span></span>
-<span id="cb189-3"><a href="#cb189-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> artists <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(edition_number, year, book)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb189-2"><a href="#cb189-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> artists <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(edition_number, year, book)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb190"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb190-1"><a href="#cb190-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(x, <span class="fu">aes</span>(<span class="at">x =</span> edition_number, <span class="at">y =</span> year, <span class="at">fill =</span> book)) <span class="sc">+</span>  </span>
@@ -2316,6 +2326,7 @@ Prediction Gardner Janson
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-116-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The plot shows the relationship between “edition_number” and “year” with different colors representing the “book.” It uses transparency to indicate areas of higher density.</p>
 <section id="k-nearest-neighbors-classifier" class="level4">
 <h4 class="anchored" data-anchor-id="k-nearest-neighbors-classifier">K-Nearest Neighbors Classifier</h4>
 <p>set the number of nearest neighbors to 1</p>
@@ -2360,6 +2371,7 @@ Prediction Gardner Janson
 </section>
 <section id="naive-bayes-classifier" class="level4">
 <h4 class="anchored" data-anchor-id="naive-bayes-classifier">Naive Bayes Classifier</h4>
+<p>Naive Bayes is a classification technique that is based on Bayes’ Theorem with an assumption that all the features that predicts the target value are independent of each other.&nbsp;</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb194"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb194-1"><a href="#cb194-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> x <span class="sc">|&gt;</span> e1071<span class="sc">::</span><span class="fu">naiveBayes</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _)</span>
 <span id="cb194-2"><a href="#cb194-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>, </span>
@@ -2373,6 +2385,7 @@ Prediction Gardner Janson
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-120-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The plot displays the decision boundaries of the Naive Bayes classifier.</p>
 </section>
 <section id="linear-discriminant-analysis" class="level4">
 <h4 class="anchored" data-anchor-id="linear-discriminant-analysis">Linear Discriminant Analysis</h4>
@@ -2389,6 +2402,7 @@ Prediction Gardner Janson
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-121-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The plot displays the decision boundaries of the LDA classifier. It shows how the classifier predicts the class of data points based on their features</p>
 </section>
 <section id="multinomial-logistic-regression-implemented-in-nnet" class="level4">
 <h4 class="anchored" data-anchor-id="multinomial-logistic-regression-implemented-in-nnet">Multinomial Logistic Regression (implemented in nnet)</h4>
@@ -2412,6 +2426,7 @@ final  value 8.635512
 stopped after 100 iterations</code></pre>
 </div>
 </div>
+<p>The output gives information about the optimization iterations, such as the start value, iteratively decreasing values, and, finally, the converged value. It also indicates that the optimization process was terminated after 100 iterations.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb198"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb198-1"><a href="#cb198-1" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
 <span id="cb198-2"><a href="#cb198-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Multinomial Logistic Regression"</span>,</span>
@@ -2423,6 +2438,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-123-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The plot show the decision boundaries and how the model separates or classifies data points into different classes.</p>
 </section>
 <section id="decision-trees-1" class="level4">
 <h4 class="anchored" data-anchor-id="decision-trees-1">Decision Trees</h4>
@@ -2444,7 +2460,7 @@ stopped after 100 iterations</code></pre>
 <span id="cb200-2"><a href="#cb200-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">cp =</span> <span class="fl">0.001</span>, <span class="at">minsplit =</span> <span class="dv">1</span>))</span>
 <span id="cb200-3"><a href="#cb200-3" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
 <span id="cb200-4"><a href="#cb200-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"CART (overfitting)"</span>,</span>
-<span id="cb200-5"><a href="#cb200-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Edition number)"</span>,</span>
+<span id="cb200-5"><a href="#cb200-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Edition number"</span>,</span>
 <span id="cb200-6"><a href="#cb200-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Year"</span>,</span>
 <span id="cb200-7"><a href="#cb200-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">shape =</span> <span class="st">"Book"</span>,</span>
 <span id="cb200-8"><a href="#cb200-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Prediction"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -2452,6 +2468,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-125-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>Parameter (cp = 0.001) and a minimum split of 1 (minsplit = 1) can cause overfitting, but it’s not showing much changes in the plot.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb201"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb201-1"><a href="#cb201-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> x <span class="sc">|&gt;</span> C50<span class="sc">::</span><span class="fu">C5.0</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _)</span>
 <span id="cb201-2"><a href="#cb201-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
@@ -2464,6 +2481,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-126-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The decision plot typically shows the decision boundaries and how the C5.0 model categorizes different data points.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb202"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb202-1"><a href="#cb202-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> x <span class="sc">|&gt;</span> randomForest<span class="sc">::</span><span class="fu">randomForest</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _)</span>
 <span id="cb202-2"><a href="#cb202-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
@@ -2476,6 +2494,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-127-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The decision plot typically shows the decision boundaries and how the Random Forest model categorizes different data points.</p>
 </section>
 <section id="svm" class="level4">
 <h4 class="anchored" data-anchor-id="svm">SVM</h4>
@@ -2492,6 +2511,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-128-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The plot based on the SVM model with a linear kernel. Here linear kernel is more suitable.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb204"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb204-1"><a href="#cb204-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> x <span class="sc">|&gt;</span> e1071<span class="sc">::</span><span class="fu">svm</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _, <span class="at">kernel =</span> <span class="st">"radial"</span>)</span>
 <span id="cb204-2"><a href="#cb204-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
@@ -2504,6 +2524,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-129-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The “radial” kernel is a non-linear kernel and is suitable for capturing complex patterns in the data.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb205"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb205-1"><a href="#cb205-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> x <span class="sc">|&gt;</span> e1071<span class="sc">::</span><span class="fu">svm</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _, <span class="at">kernel =</span> <span class="st">"polynomial"</span>)</span>
 <span id="cb205-2"><a href="#cb205-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
@@ -2516,6 +2537,7 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-130-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>The “polynomial” kernel is a non-linear kernel that can capture complex patterns in the data, making it suitable for non-linear classification tasks.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb206"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb206-1"><a href="#cb206-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> x <span class="sc">|&gt;</span> e1071<span class="sc">::</span><span class="fu">svm</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _, <span class="at">kernel =</span> <span class="st">"sigmoid"</span>)</span>
 <span id="cb206-2"><a href="#cb206-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var =</span> <span class="st">"book"</span>) <span class="sc">+</span> </span>
@@ -2528,18 +2550,21 @@ stopped after 100 iterations</code></pre>
 <p><img src="hw-03-utkarshapatil01_files/figure-html/unnamed-chunk-131-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>Sigmoid kernels are useful when data relationships are non-linear and may exhibit complex patterns.</p>
 </section>
 <section id="single-layer-feed-forward-neural-networks" class="level4">
 <h4 class="anchored" data-anchor-id="single-layer-feed-forward-neural-networks">Single Layer Feed-forward Neural Networks</h4>
+<p>Not able to plot for this dataset as getting warning: Computation failed in `stat_contour()`</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb207"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb207-1"><a href="#cb207-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span>x <span class="sc">|&gt;</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb207-2"><a href="#cb207-2" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var  =</span> <span class="st">"book"</span>, </span>
-<span id="cb207-3"><a href="#cb207-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">predict_type =</span> <span class="fu">c</span>(<span class="st">"class"</span>, <span class="st">"raw"</span>)) <span class="sc">+</span> </span>
-<span id="cb207-4"><a href="#cb207-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"NN (1 neuron)"</span>,</span>
-<span id="cb207-5"><a href="#cb207-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Edition number"</span>,</span>
-<span id="cb207-6"><a href="#cb207-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Year"</span>,</span>
-<span id="cb207-7"><a href="#cb207-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">shape =</span> <span class="st">"Book"</span>,</span>
-<span id="cb207-8"><a href="#cb207-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Prediction"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb207"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb207-1"><a href="#cb207-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit a neural network model with a single neuron</span></span>
+<span id="cb207-2"><a href="#cb207-2" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span>x <span class="sc">|&gt;</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(book <span class="sc">~</span> ., <span class="at">data =</span> _, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb207-3"><a href="#cb207-3" aria-hidden="true" tabindex="-1"></a><span class="fu">decisionplot</span>(model, x, <span class="at">class_var  =</span> <span class="st">"book"</span>, </span>
+<span id="cb207-4"><a href="#cb207-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">predict_type =</span> <span class="fu">c</span>(<span class="st">"class"</span>, <span class="st">"raw"</span>)) <span class="sc">+</span> </span>
+<span id="cb207-5"><a href="#cb207-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"NN (1 neuron)"</span>,</span>
+<span id="cb207-6"><a href="#cb207-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Edition number"</span>,</span>
+<span id="cb207-7"><a href="#cb207-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Year"</span>,</span>
+<span id="cb207-8"><a href="#cb207-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">shape =</span> <span class="st">"Book"</span>,</span>
+<span id="cb207-9"><a href="#cb207-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Prediction"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Computation failed in `stat_contour()`
 Caused by error in `if (zero_range(range)) ...`:

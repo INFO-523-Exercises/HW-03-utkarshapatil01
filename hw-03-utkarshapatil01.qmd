@@ -850,7 +850,7 @@ C45Fit$finalModel
 ### **K-Nearest Neighbors**
 
 ```{r warning=FALSE}
-# Train a k-Nearest Neighbors (k-NN) classification model
+# Train a k-Nearest Neighbors (KNN) classification model
 knnFit <- artists_train |> train(book ~ .,
   method = "knn",
   data = _,
@@ -860,6 +860,8 @@ knnFit <- artists_train |> train(book ~ .,
     trControl = trainControl(method = "cv", indexOut = train_index))
 knnFit
 ```
+
+For each k value from 1 to 10, the accuracy and Kappa statistics is given. The best k value is chosen based on the highest accuracy, and in this case, the best k is 1 (k = 1) due it's highest value.
 
 ```{r}
 knnFit$finalModel
@@ -879,9 +881,13 @@ rulesFit <- artists_train |> train(book ~ .,
 rulesFit
 ```
 
+For each combination of "threshold" and "pruned" settings, we have given the accuracy and Kappa statistics. Here for all the cases it's 1. The final values used for the model were threshold = 0.5 and pruned = yes.
+
 ```{r}
 rulesFit$finalModel
 ```
+
+This decision list is used for classifying instances and provides rules for assigning instances to classes
 
 ### **Linear Support Vector Machines**
 
@@ -897,9 +903,13 @@ svmFit <- artists_train |> train(book ~.,
 svmFit
 ```
 
+The results indicate that the model achieved perfect accuracy (1) and perfect Kappa (1).
+
 ```{r}
 svmFit$finalModel
 ```
+
+Training error: 0 indicates that the training error for the SVM model is 0, meaning the model perfectly fits the training data.
 
 ### **Random Forest**
 
@@ -915,9 +925,13 @@ randomForestFit <- artists_train |> train(book ~ .,
 randomForestFit
 ```
 
+The "mtry" parameter represents the number of predictors randomly selected to split a node in a tree of the Random Forest. The best "mtry" value was selected based on the highest accuracy, and in this case, the best "mtry" is 19.
+
 ```{r}
 randomForestFit$finalModel
 ```
+
+For class "Gardner,"there was only 1 mis classification, resulting in a very low error rate of approximately 0.000663, but class "Janson," it correctly classified all instances.
 
 ### **Gradient Boosted Decision Trees (xgboost)**
 
@@ -942,6 +956,8 @@ xgboostFit <- artists_train |> train(book ~ .,
 xgboostFit
 ```
 
+The results indicate that the model achieved very high accuracy (0.998) and Kappa (0.995).
+
 ```{r}
 xgboostFit$finalModel
 ```
@@ -958,9 +974,13 @@ nnetFit <- artists_train |> train(book ~ .,
 nnetFit
 ```
 
+Different combinations of "size" and "decay" values are tested during hyperparameter tuning to find the combination that results in the best model performance. Accuracy was used to select the optimal model, and the final values used for the model are size = 7 and decay = 0.01.
+
 ```{r}
 nnetFit$finalModel
 ```
+
+Output provides a detailed summary of the neural network architecture, the input features, the output etc.
 
 ## **Comparing Models**
 
@@ -984,12 +1004,14 @@ resamps
 summary(resamps)
 ```
 
+The accuracy values range from 0.819 to 1.00 and Kappa values ranges from 0.648 to 1.000, showing majority of models are performing well.
+
 ```{r}
 library(lattice)
 bwplot(resamps, layout = c(3, 1))
 ```
 
-For the "CART" model, the accuracy values range from a minimum of 1.000 to a maximum of 1.000, indicating high performance.
+For the "CART" model, the accuracy value is 1.00, indicating high performance.
 
 For the "kNearestNeighbors" (k-NN) model, the accuracy values are slightly lower, with 0.961, which means the k-NN model is slightly less accurate on average compared to CART.
 
@@ -1099,7 +1121,6 @@ We will continue using same dataset and will be using edition_number, year and b
 
 ```{r}
 ### Three classes 
-### (note: MASS also has a select function which hides dplyr's select)
 x <- artists |> dplyr::select(edition_number, year, book)
 ```
 
@@ -1113,6 +1134,8 @@ ggplot(x, aes(x = edition_number, y = year, fill = book)) +
        fill = "Book",
        alpha = "Density")
 ```
+
+The plot shows the relationship between "edition_number" and "year" with different colors representing the "book." It uses transparency to indicate areas of higher density.
 
 #### K-Nearest Neighbors Classifier
 
@@ -1154,6 +1177,8 @@ decisionplot(model, x, class_var = "book") +
 
 #### Naive Bayes Classifier
 
+Naive Bayes is a classification technique that is based on Bayes' Theorem with an assumption that all the features that predicts the target value are independent of each other. 
+
 ```{r}
 model <- x |> e1071::naiveBayes(book ~ ., data = _)
 decisionplot(model, x, class_var = "book", 
@@ -1164,6 +1189,8 @@ decisionplot(model, x, class_var = "book",
        shape = "Book",
        fill = "Prediction") 
 ```
+
+The plot displays the decision boundaries of the Naive Bayes classifier.
 
 #### Linear Discriminant Analysis
 
@@ -1179,6 +1206,8 @@ decisionplot(model, x, class_var = "book") +
        fill = "Prediction")
 ```
 
+The plot displays the decision boundaries of the LDA classifier. It shows how the classifier predicts the class of data points based on their features
+
 #### Multinomial Logistic Regression (implemented in nnet)
 
 Multinomial logistic regression is an extension of logistic regression to problems with more than two classes.
@@ -1186,6 +1215,8 @@ Multinomial logistic regression is an extension of logistic regression to proble
 ```{r}
 model <- x |> nnet::multinom(book ~., data = _)
 ```
+
+The output gives information about the optimization iterations, such as the start value, iteratively decreasing values, and, finally, the converged value. It also indicates that the optimization process was terminated after 100 iterations.
 
 ```{r}
 decisionplot(model, x, class_var = "book") + 
@@ -1195,6 +1226,8 @@ decisionplot(model, x, class_var = "book") +
        shape = "Book",
        fill = "Prediction")
 ```
+
+The plot show the decision boundaries and how the model separates or classifies data points into different classes.
 
 #### Decision Trees
 
@@ -1215,11 +1248,13 @@ model <- x |> rpart::rpart(book ~ ., data = _,
   control = rpart.control(cp = 0.001, minsplit = 1))
 decisionplot(model, x, class_var = "book") + 
   labs(title = "CART (overfitting)",
-       x = "Edition number)",
+       x = "Edition number",
        y = "Year",
        shape = "Book",
        fill = "Prediction")
 ```
+
+Parameter (cp = 0.001) and a minimum split of 1 (minsplit = 1) can cause overfitting, but it's not showing much changes in the plot.
 
 ```{r}
 model <- x |> C50::C5.0(book ~ ., data = _)
@@ -1231,6 +1266,8 @@ decisionplot(model, x, class_var = "book") +
        fill = "Prediction")
 ```
 
+The decision plot typically shows the decision boundaries and how the C5.0 model categorizes different data points.
+
 ```{r}
 model <- x |> randomForest::randomForest(book ~ ., data = _)
 decisionplot(model, x, class_var = "book") + 
@@ -1240,6 +1277,8 @@ decisionplot(model, x, class_var = "book") +
        shape = "Book",
        fill = "Prediction")
 ```
+
+The decision plot typically shows the decision boundaries and how the Random Forest model categorizes different data points.
 
 #### SVM
 
@@ -1255,6 +1294,8 @@ decisionplot(model, x, class_var = "book") +
        fill = "Prediction")
 ```
 
+The plot based on the SVM model with a linear kernel. Here linear kernel is more suitable.
+
 ```{r}
 model <- x |> e1071::svm(book ~ ., data = _, kernel = "radial")
 decisionplot(model, x, class_var = "book") + 
@@ -1264,6 +1305,8 @@ decisionplot(model, x, class_var = "book") +
        shape = "Book",
        fill = "Prediction")
 ```
+
+The "radial" kernel is a non-linear kernel and is suitable for capturing complex patterns in the data.
 
 ```{r}
 model <- x |> e1071::svm(book ~ ., data = _, kernel = "polynomial")
@@ -1275,6 +1318,8 @@ decisionplot(model, x, class_var = "book") +
        fill = "Prediction")
 ```
 
+The "polynomial" kernel is a non-linear kernel that can capture complex patterns in the data, making it suitable for non-linear classification tasks.
+
 ```{r}
 model <- x |> e1071::svm(book ~ ., data = _, kernel = "sigmoid")
 decisionplot(model, x, class_var = "book") + 
@@ -1285,9 +1330,14 @@ decisionplot(model, x, class_var = "book") +
        fill = "Prediction")
 ```
 
+Sigmoid kernels are useful when data relationships are non-linear and may exhibit complex patterns.
+
 #### Single Layer Feed-forward Neural Networks
 
+Not able to plot for this dataset as getting warning: Computation failed in \`stat_contour()\`
+
 ```{r}
+# Fit a neural network model with a single neuron
 model <-x |> nnet::nnet(book ~ ., data = _, size = 1, trace = FALSE)
 decisionplot(model, x, class_var  = "book", 
   predict_type = c("class", "raw")) + 
